@@ -1,0 +1,37 @@
+# ===== 构建输出 =====
+out/
+build/
+cmake-build-*/
+*.obj
+*.pdb
+*.ilk
+*.exe
+
+# ===== CMake =====
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+compile_commands.json
+CMakeUserPresets.json
+
+# ===== vcpkg =====
+vcpkg_installed/
+.vcpkg/
+
+# ===== Visual Studio =====
+.vs/
+*.user
+*.suo
+*.sln.docstates
+
+# ===== 编辑器 =====
+.vscode/
+.idea/
+*.swp
+*~
+
+# ===== 系统 =====
+Thumbs.db
+Desktop.ini
+.DS_Store
