@@ -30,6 +30,7 @@ add_executable (HAAgent
   "src/main.cpp"
   "src/core/server.cpp"
   "src/core/session.cpp"
+  "src/http/http_client.cpp"
   "src/llm/chat_engine.cpp"
   "src/llm/chat_session_manager.cpp"
   "src/llm/llm_client.cpp"
@@ -43,6 +44,7 @@ target_sources(HAAgent PRIVATE
     FILES
       "src/core/server.hpp"
       "src/core/session.hpp"
+      "src/http/http_client.hpp"
       "src/llm/chat_context.hpp"
       "src/llm/chat_engine.hpp"
       "src/llm/chat_session_manager.hpp"
