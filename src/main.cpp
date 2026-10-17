@@ -3,6 +3,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
+#include <nlohmann/json.hpp>
 
 #include "core/server.hpp"
 #include "llm/chat_engine.hpp"
@@ -15,6 +16,8 @@ namespace http = beast::http;
 
 using HttpRequest = http::request<http::string_body>;
 using HttpResponse = http::response<http::string_body>;
+
+using json = nlohmann::json;
 
 int main() {
     try {
@@ -50,7 +53,23 @@ int main() {
                 }
                 auto ctx = chat_mgr.get_or_create_session(session_id);
 
-                std::string reply = chat_engine.process(request.body());
+                std::string user_msg;
+                try
+                {
+                    auto req_json = json::parse(request.body());
+                    if (req_json.contains("msg")) {
+                        user_msg = req_json["msg"].get<std::string>();
+                    }
+                    else {
+                        user_msg = request.body(); // 没有 msg 字段就传原始内容
+                    }
+
+                }
+                catch (const std::exception& e)
+                {
+                    user_msg = request.body();     // 解析失败就传原始内容
+                }
+                std::string reply = chat_engine.process(user_msg);
 
                 response.set(http::field::content_type, "application/json");
                 response.set("X-Session-Id", session_id);

@@ -1,26 +1,17 @@
 ﻿#include "chat_engine.hpp"
 
-#include <iostream>
+#include <vector>
 
-ChatEngine::ChatEngine() : llm_client_(get_api_key())
+ChatEngine::ChatEngine()
+	: llm_client_("127.0.0.1", "9931")
 {
-	if (!is_configured())
-	{
-		std::cerr << "Error: API Key is not configured." << std::endl;
-	}
 }
 
 std::string ChatEngine::process(const std::string& input)
 {
-	return std::string("测试成功");
-}
+	std::vector<std::pair<std::string, std::string>> messages;
+	messages.push_back({ "user", input });
 
-bool ChatEngine::is_configured()
-{
-	return llm_client_.is_configured();
-}
-
-std::string ChatEngine::get_api_key()
-{
-	return std::string();
+	std::string reply = llm_client_.complete(messages);
+	return reply;
 }
