@@ -62,5 +62,27 @@ target_link_libraries(HAAgent PRIVATE
   Threads::Threads
 )
 
+# 客户端
+add_executable (HAAgentClient
+  "src/client/client.cpp"
+  "src/client/chat_client.cpp"
+  "src/http/http_client.cpp"
+)
+
+# 添加头文件
+target_sources(HAAgentClient PRIVATE
+    FILE_SET HEADERS
+    BASE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}
+    FILES
+       "src/client/chat_client.hpp"
+       "src/http/http_client.hpp"
+)
+
+# 链接依赖库
+target_link_libraries(HAAgentClient PRIVATE
+  Boost::system
+  Threads::Threads
+)
+
 # 安装规则：仅安装可执行文件
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
