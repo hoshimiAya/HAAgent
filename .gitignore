@@ -1,4 +1,4 @@
-# ===== 构建输出 =====
+﻿# ===== 构建输出 =====
 out/
 build/
 cmake-build-*/
@@ -6,6 +6,7 @@ cmake-build-*/
 *.pdb
 *.ilk
 *.exe
+diff.txt
 
 # ===== CMake =====
 CMakeCache.txt
