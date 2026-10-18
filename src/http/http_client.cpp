@@ -16,6 +16,15 @@ HttpClient::HttpClient(const std::string& host, const std::string& port)
 
 std::string HttpClient::post(const std::string& target, const std::map<std::string, std::string>& headers, const std::string& body)
 {
+	auto response = post_full(target, headers, body);
+	if (response.result() != http::status::ok) {
+		throw std::runtime_error("HTTP Error: " + std::to_string(response.result_int()));
+	}
+	return response.body();
+}
+
+HttpResponse HttpClient::post_full(const std::string& target, const std::map<std::string, std::string>& headers, const std::string& body)
+{
 	try
 	{
 		asio::io_context io;
@@ -46,10 +55,7 @@ std::string HttpClient::post(const std::string& target, const std::map<std::stri
 			// donothing
 		}
 
-		if (response.result() != http::status::ok) {
-			throw std::runtime_error("HTTP Error: " + std::to_string(response.result_int()));
-		}
-		return response.body();
+		return response;
 	}
 	catch (const std::exception& e)
 	{
