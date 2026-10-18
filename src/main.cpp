@@ -51,7 +51,6 @@ int main() {
                 if (session_id.empty()) {
                     session_id = chat_mgr.generate_session_id();
                 }
-                auto ctx = chat_mgr.get_or_create_session(session_id);
 
                 std::string user_msg;
                 try
@@ -69,7 +68,23 @@ int main() {
                 {
                     user_msg = request.body();     // 解析失败就传原始内容
                 }
-                std::string reply = chat_engine.process(user_msg);
+
+                auto summary = chat_mgr.get_summary(session_id);
+                auto history = chat_mgr.get_history(session_id);
+
+                std::string reply = chat_engine.process(summary, history, user_msg);
+                auto overflow = chat_mgr.append_turn(session_id, user_msg, reply);
+
+                if (!overflow.empty()) {
+                    auto new_summary = chat_engine.summarize(summary, overflow);
+                    if (!new_summary.empty()) {
+                        chat_mgr.set_summary(session_id, new_summary);
+                    }
+                    else {
+                        std::cerr << "Summarize failed, overflow dropped: "
+                            << overflow.size() << " messages\n";
+                    }
+                }
 
                 response.set(http::field::content_type, "application/json");
                 response.set("X-Session-Id", session_id);

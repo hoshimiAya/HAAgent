@@ -11,6 +11,7 @@ struct ChatContext
 	std::chrono::steady_clock::time_point last_time;
 	int message_out = 0;
 	std::vector<std::pair<std::string, std::string>> history;
+	std::string summary; // 摘要
 
 	bool is_valid() const {
 		if (last_intent.empty()) {

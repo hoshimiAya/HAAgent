@@ -3,6 +3,7 @@
 #include <mutex>
 #include <random>
 #include <string_view>
+#include <memory>
 
 std::shared_ptr<ChatContext> ChatSessionManager::get_or_create_session(const std::string& session_id)
 {
@@ -53,4 +54,72 @@ size_t ChatSessionManager::session_count() const
 {
     std::lock_guard<std::mutex> lock(mutex_);
     return sessions_.size();
+}
+
+std::vector<std::pair<std::string, std::string>> ChatSessionManager::get_history(const std::string& session_id)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    auto context_it = sessions_.find(session_id);
+    if (context_it == sessions_.end()) {
+        return {};
+    }
+
+    auto& context = context_it->second;
+    context->last_time = std::chrono::steady_clock::now();
+    return context->history;
+}
+
+void ChatSessionManager::set_summary(const std::string& session_id, const std::string& summary)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    auto& context = sessions_[session_id];
+    if (!context) {
+        context = std::make_shared<ChatContext>();
+        context->session_id = session_id;
+    }
+    context->summary = summary;
+    context->last_time = std::chrono::steady_clock::now();
+}
+
+std::string ChatSessionManager::get_summary(const std::string& session_id)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    auto context_it = sessions_.find(session_id);
+    if (context_it == sessions_.end()) {
+        return {};
+    }
+
+    auto& context = context_it->second;
+    context->last_time = std::chrono::steady_clock::now();
+    return context->summary;
+}
+
+std::vector<std::pair<std::string, std::string>> ChatSessionManager::append_turn(const std::string& session_id, const std::string& user_message, const std::string& assistant_message)
+{
+    std::lock_guard<std::mutex> lock(mutex_);
+
+    auto& context = sessions_[session_id];
+    if (!context) {
+        context = std::make_shared<ChatContext>();
+        context->session_id = session_id;
+    }
+
+    context->history.emplace_back("user", user_message);
+    context->history.emplace_back("assistant", assistant_message);
+
+    std::vector<std::pair<std::string, std::string>> overflow;
+    constexpr std::size_t maxHistoryMessages = 20;
+    if (context->history.size() > maxHistoryMessages) {
+        auto n = static_cast<std::ptrdiff_t>(context->history.size() - maxHistoryMessages);
+        auto end = std::next(context->history.begin(), n);
+        overflow.reserve(n);
+        overflow.assign(std::make_move_iterator(context->history.begin()), std::make_move_iterator(end));
+        context->history.erase(context->history.begin(), end);
+    }
+
+    context->last_time = std::chrono::steady_clock::now();
+    return overflow;
 }
