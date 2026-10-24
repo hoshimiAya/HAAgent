@@ -9,6 +9,7 @@
 #include "llm/chat_engine.hpp"
 #include "llm/chat_session_manager.hpp"
 #include "routing/router.hpp"
+#include "log.hpp"
 
 namespace asio = boost::asio;
 namespace beast = boost::beast;
@@ -21,6 +22,8 @@ using json = nlohmann::json;
 
 int main() {
     try {
+        logging::init();
+
 		asio::io_context io;
 		Router router;
         router.add_route("GET", "/", [](const HttpRequest&) -> HttpResponse {
@@ -50,6 +53,7 @@ int main() {
                 std::string session_id(request["x-session-id"]);
                 if (session_id.empty()) {
                     session_id = chat_mgr.generate_session_id();
+                    LOG_INF("new session={}", logging::short_id(session_id));
                 }
 
                 std::string user_msg;
@@ -69,20 +73,35 @@ int main() {
                     user_msg = request.body();     // 解析失败就传原始内容
                 }
 
+                LOG_DBG("req session={} msg_len={} total_sessions={}",
+                    logging::short_id(session_id), user_msg.size(),
+                    chat_mgr.session_count());
+
                 auto summary = chat_mgr.get_summary(session_id);
                 auto history = chat_mgr.get_history(session_id);
 
+                LOG_DBG("ctx session={} history={} has_summary={}",
+                    logging::short_id(session_id), history.size(), !summary.empty());
+
                 std::string reply = chat_engine.process(summary, history, user_msg);
+                LOG_INF("llm session={} reply_len={}",
+                    logging::short_id(session_id), reply.size());
+
                 auto overflow = chat_mgr.append_turn(session_id, user_msg, reply);
+                LOG_DBG("append session={} overflow={}",
+                    logging::short_id(session_id), overflow.size());
 
                 if (!overflow.empty()) {
                     auto new_summary = chat_engine.summarize(summary, overflow);
                     if (!new_summary.empty()) {
                         chat_mgr.set_summary(session_id, new_summary);
+                        LOG_INF("summarize session={} overflow={} summary_len={}",
+                            logging::short_id(session_id), overflow.size(),
+                            new_summary.size());
                     }
                     else {
-                        std::cerr << "Summarize failed, overflow dropped: "
-                            << overflow.size() << " messages\n";
+                        LOG_WRN("summarize failed session={} overflow_dropped={}",
+                            logging::short_id(session_id), overflow.size());
                     }
                 }
 
@@ -111,7 +130,7 @@ int main() {
         }
 	}
 	catch (std::exception& e) {
-		std::cerr << "Exception: " << e.what() << "\n";
+        LOG_ERR("exception: {}", e.what());
 	}
 
     return 0;
