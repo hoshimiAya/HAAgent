@@ -5,6 +5,8 @@
 #include <string_view>
 #include <memory>
 
+#include "../log.hpp"
+
 std::shared_ptr<ChatContext> ChatSessionManager::get_or_create_session(const std::string& session_id)
 {
     std::lock_guard<std::mutex> lock(mutex_);
@@ -14,6 +16,8 @@ std::shared_ptr<ChatContext> ChatSessionManager::get_or_create_session(const std
     if (inserted) {
         chat_context = std::make_shared<ChatContext>();
         chat_context->session_id = session_id;
+        LOG_DBG("session.create id={} total={}",
+            logging::short_id(session_id), sessions_.size());
     }
     return chat_context;
 }
@@ -38,15 +42,20 @@ void ChatSessionManager::cleanup_expired()
     std::lock_guard<std::mutex> lock(mutex_);
     auto now = std::chrono::steady_clock::now();
 
+    std::size_t erased = 0;
     for (auto session_it = sessions_.begin(); session_it != sessions_.end();) {
         auto& context = session_it->second;
         auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - context->last_time).count();
         if (elapsed > 300) {
             session_it = sessions_.erase(session_it);
+            erased++;
         }
         else {
             session_it++;
         }
+    }
+    if (erased > 0) {
+        LOG_INF("session.cleanup erased={} remain={}", erased, sessions_.size());
     }
 }
 

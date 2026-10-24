@@ -3,6 +3,8 @@
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
+#include "../log.hpp"
+
 namespace asio = boost::asio;
 namespace beast = boost::beast;
 namespace http = beast::http;
@@ -43,11 +45,14 @@ HttpResponse HttpClient::post_full(const std::string& target, const std::map<std
 		request.body() = body;
 		request.prepare_payload();
 
+		LOG_DBG("http.connect {}:{} target={}", host_, port_, target);
 		http::write(stream, request);
 
 		beast::flat_buffer buffer;
 		http::response<http::string_body> response;
 		http::read(stream, buffer, response);
+		LOG_DBG("http.response status={} in_len={}",
+			response.result_int(), response.body().size());
 
 		beast::error_code ec;
 		stream.socket().shutdown(tcp::socket::shutdown_both, ec);
@@ -59,6 +64,8 @@ HttpResponse HttpClient::post_full(const std::string& target, const std::map<std
 	}
 	catch (const std::exception& e)
 	{
+		LOG_ERR("http.failed {}:{} target={} {}",
+			host_, port_, target, e.what());
 		throw std::runtime_error(std::string("HttpClient::post failed: ") + e.what());
 	}
 }

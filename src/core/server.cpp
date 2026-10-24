@@ -4,6 +4,8 @@
 
 #include "session.hpp"
 
+#include "../log.hpp"
+
 Server::Server(asio::io_context& io, unsigned short port, const Router& router)
 	: acceptor_(io, tcp::endpoint(tcp::v4(), port))
 	, router_(router)
@@ -20,12 +22,12 @@ void Server::do_accept()
 		{
 			if (!ec)
 			{
-				std::cout << "New connection accepted." << std::endl;
+				LOG_INF("connection accepted");
 				std::make_shared<Session>(std::move(*socket), router_)->run();
 			}
 			else
 			{	
-				std::cerr << "Accept error: " << ec.message() << std::endl;
+				LOG_WRN("accept error: {}", ec.message());
 			}
 
 			// 继续接受新的连接

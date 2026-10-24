@@ -6,6 +6,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include "../log.hpp"
+
 using json = nlohmann::json;
 
 LLMClient::LLMClient(const std::string& host, const std::string& port) 
@@ -38,7 +40,10 @@ std::string LLMClient::llm_response(const std::vector<std::pair<std::string, std
 			{"Content-Type", "application/json"}
 		};
 
+		LOG_DBG("llm.request messages={} body_len={}",
+			message.size(), request_body.size());
 		std::string response_body = http_client_.post("/v1/chat/completions", headers, request_body);
+		LOG_DBG("llm.response body_len={}", response_body.size());
 
 		json response_json = json::parse(response_body);
 
@@ -47,13 +52,13 @@ std::string LLMClient::llm_response(const std::vector<std::pair<std::string, std
 			return response_json["choices"][0]["message"]["content"].get<std::string>();
 		}
 		else {
-			std::cerr << "LLM Response format error: " << response_body << std::endl;
+			LOG_ERR("llm.response format error: {}", response_body);
 			return "Error: Invalid response format";
 		}
 	}
 	catch (const std::exception& e)
 	{
-		std::cerr << "LLMClient exception: " << e.what() << std::endl;
+		LOG_ERR("llm.exception {}", e.what());
 		return std::string("Error: ") + e.what();
 	}
 }

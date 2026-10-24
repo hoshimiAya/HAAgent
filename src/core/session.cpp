@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "../log.hpp"
+
 namespace asio = boost::asio;
 
 Session::Session(tcp::socket socket, const Router& router)
@@ -37,7 +39,7 @@ void Session::on_read(beast::error_code ec, std::size_t bytes_transferred)
 		return do_close();
 	}
 	if (ec) {
-		std::cerr << "Read error: " << ec.message() << std::endl;
+		LOG_WRN("session read error: {}", ec.message());
 		return;
 	}
 
@@ -73,8 +75,8 @@ void Session::handle_request(http::request<http::string_body>&& request)
 	response.keep_alive(keep_alive);
 	response.prepare_payload();
 
-	std::cout << "Request: " << method << " " << path
-		<< " -> " << response.result_int() << std::endl;
+	LOG_INF("http {} {} -> {} body_out={}",
+		method, path, response.result_int(), response.body().size());
 
 	do_write(std::move(response));
 }
@@ -90,18 +92,12 @@ void Session::do_write(http::response<http::string_body>&& response)
 	);
 }
 
-void Session::do_close()
-{
-	beast::error_code ec;
-	stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
-}
-
 void Session::on_write(bool keep_alive, beast::error_code ec, std::size_t bytes_transferred)
 {
 	boost::ignore_unused(bytes_transferred);
 
 	if (ec) {
-		std::cerr << "Write error: " << ec.message() << std::endl;
+		LOG_WRN("session write error: {}", ec.message());
 		return;
 	}
 
@@ -109,4 +105,10 @@ void Session::on_write(bool keep_alive, beast::error_code ec, std::size_t bytes_
 		return do_close();
 	}
 	do_read();
+}
+
+void Session::do_close()
+{
+	beast::error_code ec;
+	stream_.socket().shutdown(tcp::socket::shutdown_send, ec);
 }
