@@ -55,9 +55,9 @@ int main() {
                 std::string user_msg;
                 try
                 {
-                    auto req_json = json::parse(request.body());
-                    if (req_json.contains("msg")) {
-                        user_msg = req_json["msg"].get<std::string>();
+                    auto request_json = json::parse(request.body());
+                    if (request_json.contains("msg")) {
+                        user_msg = request_json["msg"].get<std::string>();
                     }
                     else {
                         user_msg = request.body(); // 没有 msg 字段就传原始内容
@@ -88,7 +88,10 @@ int main() {
 
                 response.set(http::field::content_type, "application/json");
                 response.set("X-Session-Id", session_id);
-                response.body() = R"({"reply":")" + reply + R"("})";
+
+                json response_json;
+                response_json["reply"] = reply;
+                response.body() = response_json.dump();
                 response.prepare_payload();
                 return response;
         });
