@@ -24,6 +24,10 @@ endif()
 find_package(Threads REQUIRED)
 # 查找 Boost 库，确保包含 system 组件
 find_package(Boost REQUIRED COMPONENTS system)
+# 查找 nlohmann json 库
+find_package(nlohmann_json CONFIG REQUIRED)
+# 查找 spdlog 库
+find_package(spdlog CONFIG REQUIRED)
 
 # 将源代码添加到此项目的可执行文件。
 add_executable (HAAgent
@@ -60,6 +64,8 @@ target_include_directories(HAAgent PRIVATE
 target_link_libraries(HAAgent PRIVATE
   Boost::system
   Threads::Threads
+  nlohmann_json::nlohmann_json
+  spdlog::spdlog
 )
 
 # 客户端
